@@ -1,1 +1,92 @@
+import { getDanhSachBds } from '@/utils/dataFetcher';
+import ClientPage from './ClientPage';
+
+// Hàm cấu hình SEO Động (Dynamic Metadata) chạy hoàn toàn trên Server
+export async function generateMetadata({ searchParams }) {
+  const danhSachBds = await getDanhSachBds();
+  const idParam = searchParams?.id;
+  const currentId = idParam ? parseInt(idParam) : null;
+  
+  const item = danhSachBds.find(p => p.id === currentId);
+  
+  if (item) {
+    const tieuDeMoi = `${item.tieude} | Trần Huy Land`;
+    const moTaMoi = `Giá bán: ${item.gia}. Diện tích: ${item.dienTich}. Vị trí: ${item.khuVucFull}. ${item.moTa?.substring(0, 100)}...`;
+    return {
+      title: tieuDeMoi,
+      description: moTaMoi,
+      openGraph: {
+        title: tieuDeMoi,
+        description: moTaMoi,
+        images: [item.anh?.split(',')[0]?.trim() || "https://i.postimg.cc/JhKg8VZ9/70554272-47DB-4D3A-A1AE-2782EFCAF00F.png"],
+      },
+    };
+  }
+
+  // Cấu hình SEO mặc định cho trang chủ
+  return {
+    title: 'Trần Huy Land | Kho Nhà Đất Chính Chủ Hải Châu Cẩm Lệ Đà Nẵng',
+    description: 'Mua bán, ký gửi nhà đất chính chủ uy tín tại Hải Châu, Cẩm Lệ, Đà Nẵng. Cập nhật giỏ hàng thực tế mỗi ngày: Nhà mặt tiền Cẩm Bá Thước, nhà kiệt ô tô Cách Mạng Tháng 8. Pháp lý minh bạch.',
+    keywords: 'nhà đất đà nẵng, nhà đất chính chủ hải châu, ký gửi nhà đất cẩm lệ, nhà đất trần huy, mua nhà đà nẵng, bán đất cẩm lệ, mặt tiền cẩm bá thước',
+    alternates: {
+      canonical: 'https://tranhuyland.vn',
+    },
+    openGraph: {
+      title: 'Trần Huy Land | Kho Nhà Đất Chính Chủ Hải Châu Cẩm Lệ Đà Nẵng',
+      description: 'Mua bán, ký gửi nhà đất chính chủ uy tín tại Hải Châu, Cẩm Lệ, Đà Nẵng. Cập nhật giỏ hàng thực tế mỗi ngày.',
+      images: ['https://i.postimg.cc/JhKg8VZ9/70554272-47DB-4D3A-A1AE-2782EFCAF00F.png'],
+      type: 'website',
+    },
+  };
+}
+
+export default async function Page({ searchParams }) {
+  // Đổ dữ liệu từ Google Sheet trực tiếp trên Server
+  const danhSachBds = await getDanhSachBds();
+  
+  return (
+    <>
+      {/* Schema Dữ liệu cấu trúc JSON-LD chuẩn xác phục vụ Google Map Rich Snippet */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "RealEstateAgent",
+            "name": "Trần Huy Land",
+            "url": "https://tranhuyland.vn",
+            "telephone": "0931555551",
+            "image": "https://i.postimg.cc/JhKg8VZ9/70554272-47DB-4D3A-A1AE-2782EFCAF00F.png",
+            "priceRange": "$$$",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "26 Cẩm Bá Thước, Phường Hòa Cường Bắc",
+              "addressLocality": "Hải Châu",
+              "addressRegion": "Đà Nẵng",
+              "addressCountry": "VN"
+            },
+            "areaServed": ["Hải Châu", "Cẩm Lệ", "Sơn Trà", "Thanh Khê", "Đà Nẵng"]
+          })
+        }}
+      />
+      
+      {/* Toàn bộ dữ liệu thô được đổ trực tiếp vào DOM HTML giúp Google Bot thu thập thông tin giỏ hàng 100% */}
+      <div className="sr-only">
+        <h2>Danh sách nhà đất đang bán tại Hải Châu, Cẩm Lệ, Đà Nẵng</h2>
+        <div>
+          {danhSachBds.map((item) => (
+            <article key={item.id}>
+              <h3>{item.tieude || ''}</h3>
+              <p>{item.moTa || ''}</p>
+              <span>Giá: {item.gia || ''} - Diện tích: {item.dienTich || ''} - Khu vực: {item.khuVucFull || ''} - Ngày đăng: {item.ngayDang || ''}</span>
+            </article>
+          ))}
+        </div>
+      </div>
+
+      {/* Truyền dữ liệu sạch xuống tầng Giao diện tương tác khách hàng */}
+      <ClientPage initialData={danhSachBds} searchParams={searchParams} />
+    </>
+  );
+}
 
